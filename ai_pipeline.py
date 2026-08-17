@@ -56,3 +56,27 @@ def query_rag_pipeline(doc_id, user_query):
         contents=prompt
     )
     return response.text
+
+def generate_initial_summary(doc_id):
+    """Retrieves the first chunks of the PDF and generates an automatic executive summary."""
+    results = collection.query(
+        query_texts=["summary overview introduction objective skills projects background experience"],
+        n_results=4,
+        where={"doc_id": doc_id}
+    )
+    
+    retrieved_chunks = results['documents'][0] if results['documents'] and results['documents'][0] else []
+    context = "\n---\n".join(retrieved_chunks)
+
+    prompt = f"""
+    You are an expert document analyzer. Read the following text extracted from an uploaded document and provide a clean, professional executive summary outlining its core purpose, key details, and structure using Markdown formatting and bullet points.
+    
+    Document Text Context:
+    {context}
+    """
+
+    response = client.models.generate_content(
+        model='gemini-3.6-flash',
+        contents=prompt
+    )
+    return response.text
