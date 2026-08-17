@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - {{ document.filename }}</title>
+    <!-- Bootstrap 5 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Marked.js for clean Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .ai-response ul, .ai-response ol { padding-left: 20px; margin-bottom: 0; }
+        .ai-response p { margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body class="bg-light d-flex flex-column h-100">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark bg-primary shadow-sm">
+        <div class="container">
+            <a class="navbar-brand text-decoration-none" href="/">🏠 Home</a>
+            <span class="navbar-text text-white fw-semibold">Active Doc: {{ document.filename }}</span>
+        </div>
+    </nav>
+
+    <!-- Chat Container -->
+    <div class="container my-4 flex-grow-1" style="max-width: 800px;">
+        <div class="card shadow-sm h-100">
+            <div class="card-body overflow-auto p-4" style="max-height: 55vh; min-height: 50vh;" id="chat-box">
+                {% if history %}
+                    {% for chat in history %}
+                        <!-- User Message -->
+                        <div class="mb-3 text-end">
+                            <div class="d-inline-block p-3 rounded bg-primary text-white text-start shadow-sm" style="max-width: 85%;">
+                                <strong>You:</strong><br>{{ chat.question }}
+                            </div>
+                        </div>
+                        <!-- AI Response -->
+                        <div class="mb-3 text-start">
+                            <div class="d-inline-block p-3 rounded bg-white text-dark border text-start shadow-sm ai-response" style="max-width: 85%;" data-raw-answer="{{ chat.answer | e }}">
+                                <strong>Gemini AI:</strong><br>
+                                <div class="rendered-content mt-1"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted my-5">
+                        <p>No questions asked yet. Ask anything about <strong>{{ document.filename }}</strong> below!</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Chat Input Form -->
+            <div class="card-footer bg-white py-3">
+                <form action="/chat/{{ document.id }}" method="POST" class="input-group">
+                    <input type="text" name="question" class="form-control" placeholder="Ask a question about this document..." autocomplete="off" required>
+                    <button class="btn btn-primary px-4" type="submit">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script to render markdown & auto-scroll -->
+    <script>
+        // Render raw markdown text into clean HTML for all AI messages
+        document.querySelectorAll('.ai-response').forEach(el => {
+            const rawText = el.getAttribute('data-raw-answer');
+            const targetDiv = el.querySelector('.rendered-content');
+            if (rawText && targetDiv) {
+                targetDiv.innerHTML = marked.parse(rawText);
+            }
+        });
+
+        // Auto-scroll chat box to bottom
+        const chatBox = document.getElementById('chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
+    </script>
+
+</body>
+</html>
