@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.utils import secure_filename
 from database import init_db, get_db
-from ai_pipeline import process_and_vectorize_pdf, query_rag_pipeline
+from ai_pipeline import process_and_vectorize_pdf, query_rag_pipeline, generate_initial_summary
 
 app = Flask(__name__)
 app.secret_key = "super_secret_ai_analyzer_key"
@@ -38,7 +38,21 @@ def upload_file():
         conn.commit()
         conn.close()
 
+        # 1. Process and vectorize PDF text
         process_and_vectorize_pdf(file_path, doc_id)
+        
+        # 2. Automatically generate initial summary
+        auto_summary = generate_initial_summary(doc_id)
+
+        # 3. Save summary into chat history as the opening conversation block
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO chat_history (document_id, question, answer) VALUES (?, ?, ?)",
+            (doc_id, "Summarize this document automatically.", auto_summary)
+        )
+        conn.commit()
+        conn.close()
+        
         return redirect(url_for('chat', doc_id=doc_id))
     
     return redirect(url_for('index'))
